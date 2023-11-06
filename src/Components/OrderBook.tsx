@@ -1,30 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Centrifuge } from "centrifuge";
-
-// TODO: move this to a separate file
-interface OrderbookData {
-  market_id: string;
-  bids: [string, string][];
-  asks: [string, string][];
-  sequence: number;
-  timestamp: number;
-}
+import { useCentrifuge } from "../hooks/useCentrifuge";
+import { OrderbookData } from "../models/orderBook";
 
 const OrderbookComponent: React.FC = () => {
   const [bids, setBids] = useState<[string, string][]>([]);
   const [asks, setAsks] = useState<[string, string][]>([]);
+  const { centrifuge, orderBookSubscription } = useCentrifuge();
 
   useEffect(() => {
-    // TODO: move this to service
-    const centrifuge = new Centrifuge("wss://api.prod.rabbitx.io/ws", {
-      token:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MDAwMDAwMDAwIiwiZXhwIjo2NTQ4NDg3NTY5fQ.o_qBZltZdDHBH3zHPQkcRhVBQCtejIuyq8V1yj5kYq8",
-    });
-
-    // TODO: Move this to hook
-    const orderBookSubscription =
-      centrifuge.newSubscription("orderbook:BTC-USD");
-
     orderBookSubscription.subscribe();
     orderBookSubscription.on("publication", (message) => {
       const data: OrderbookData = message.data;
@@ -42,7 +25,7 @@ const OrderbookComponent: React.FC = () => {
     return () => {
       centrifuge.disconnect();
     };
-  }, [bids, asks]);
+  }, [bids, asks, centrifuge, orderBookSubscription]);
 
   const sortedBids = [...bids].sort(
     (a, b) => parseFloat(b[1]) - parseFloat(a[1])
